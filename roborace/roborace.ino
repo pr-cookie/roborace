@@ -116,6 +116,9 @@ int f1, f2, pl, sr;
 float err = 0.0;
 float deff = 0.0;
 float deff_old = 0.0;
+float err_old = 0.0;
+int I = 0;
+int tm = 20
 
 void(* resetFunc) (void) = 0;
 
@@ -135,6 +138,8 @@ void loop() {
       sr = sr_sensor.readReg16Bit(RESULT_RANGE_STATUS + 10);
       sr_sensor.writeReg(SYSTEM_INTERRUPT_CLEAR, 0x01);
       }
+    err = (SERVO_NORMOL - err)*k1+((SERVO_NORMOL - err)*tm + I) * k2 + (((SERVO_NORMOL - err) - err_old)/tm) * k3;
+    err_old = err;
    flag = 0;
   }
     if (f1 < 0 or f2 < 0 or sr < 0){
@@ -143,18 +148,18 @@ void loop() {
   digitalWrite(INA, HIGH);
     resetFunc();
 }
- if ( sr > 1300 or f1 < 800 or f2 < 800){
-  motorSpeed = 70;
-  k1 = 0.02;
-  k2 = 0.02;
- }else if ( sr <= 1300 or f1 >= 800 or f2 >= 800 ){
-  motorSpeed = 50;
-  k1 = 1.4;
-  k2 = 0.2;
- }
-  deff = f1 - f2;
-  err = SERVO_NORMOL - ((deff * k1 ) + k2 * (deff - deff_old));//
-  deff_old = deff * k1 + k2 * (deff - deff_old);
+// if ( sr > 1300 or f1 < 800 or f2 < 800){
+//  motorSpeed = 70;
+//  k1 = 0.02;
+//  k2 = 0.02;
+// }else if ( sr <= 1300 or f1 >= 800 or f2 >= 800 ){
+//  motorSpeed = 50;
+//  k1 = 1.4;
+//  k2 = 0.2;
+// }
+//  deff = f1 - f2;
+//  err = SERVO_NORMOL - ((deff * k1 ) + k2 * (deff - deff_old));//
+//  deff_old = deff * k1 + k2 * (deff - deff_old);
 
   if ( err > SERVO_LEFT_LIMIT ) {
     err = SERVO_LEFT_LIMIT;
