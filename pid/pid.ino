@@ -94,11 +94,15 @@ void loop() {
       f1 = f1_sensor.readReg16Bit(RESULT_RANGE_STATUS + 10);
       f1_sensor.writeReg(SYSTEM_INTERRUPT_CLEAR, 0x01);
       }
-      
-    err = f1 - tof_base_value; 
+     if (0 != (f2_sensor.readReg(RESULT_INTERRUPT_STATUS) & 0x07)) {
+      f2 = f2_sensor.readReg16Bit(RESULT_RANGE_STATUS + 10);
+      f2_sensor.writeReg(SYSTEM_INTERRUPT_CLEAR, 0x01);
+      }
+       
+    err = f1 - f2; 
     P = err;                          // P
     I = I + err * dt;                 // I
-    D = (err - old_err) * 1000 / 22;  // D
+    D = (err - old_err) * 22 / 1000;  // D
     old_err = err;
 
     value = P * k1 + I * k2 + D * k3;   // от -22 до 22
@@ -115,7 +119,7 @@ void loop() {
 //     err = SERVO_RIGHT_LIMIT;
 //  }
   
- // my_servo.write(err); 
+  my_servo.write(err); 
   }
 
 
