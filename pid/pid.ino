@@ -33,19 +33,35 @@ int SERVO_RIGHT_LIMIT = 68; //68        79
 
 // create vlx sensor objects
 VL53L0X f1_sensor;
+VL53L0X f2_sensor;
 Servo my_servo;
 
 void setup() {
   my_servo.attach(STEERING_CONTROL);
   my_servo.write(SERVO_NORMOL);
 
+  pinMode(XSHUT_F1, OUTPUT);
+  pinMode(XSHUT_F2, OUTPUT);
+  
   Wire.begin();
   Serial.begin(9600);
   Serial.println("Initialization ...");
 
+  pinMode(XSHUT_F1, INPUT);
+  delay(10);
+  f1_sensor.setAddress(TOF_F1_ADDR);
+  
+  pinMode(XSHUT_F2, INPUT);
+  delay(10);
+  f2_sensor.setAddress(TOF_F2_ADDR);
+  
   f1_sensor.setTimeout(timeout);
   f1_sensor.init();
   f1_sensor.startContinuous();
+
+  f2_sensor.setTimeout(timeout);
+  f2_sensor.init();
+  f2_sensor.startContinuous();
 
   Serial.println("Setup done");
 
@@ -66,7 +82,7 @@ void setup() {
   sei();
 }
 
-int f1, pl, sr;
+int f1, pl, sr, f2;
 
 float err = 0.0;
 float deff = 0.0;
@@ -83,9 +99,9 @@ float P = 0.00;
 float I = 0.00;
 float D = 0.00;
 
-float k1 = 0.02;
-float k2 = 0.01;
-float k3 = 0.03;
+float k1 = 0.002;
+float k2 = 0.02;
+float k3 = 0.04;
 
 float value = 0.00;
 void loop() {
@@ -98,6 +114,7 @@ void loop() {
       f2 = f2_sensor.readReg16Bit(RESULT_RANGE_STATUS + 10);
       f2_sensor.writeReg(SYSTEM_INTERRUPT_CLEAR, 0x01);
       }
+
        
     err = f1 - f2; 
     P = err;                          // P
@@ -108,7 +125,7 @@ void loop() {
     value = P * k1 + I * k2 + D * k3;   // от -22 до 22
     flag = 0;
 
-    Serial.println("MEASURED F1 Value " + String(f1) + "\t" + "PID SIGNAL " + String(value));
+    Serial.println("F1 " + String(f1) + "\t" + "F2 " + String(f2) + "\t" + "PID SIGNAL " + String(value));
   }
 
  
@@ -119,7 +136,7 @@ void loop() {
 //     err = SERVO_RIGHT_LIMIT;
 //  }
   
-  my_servo.write(err); 
+//  my_servo.write(err); 
   }
 
 
