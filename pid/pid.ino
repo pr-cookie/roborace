@@ -34,6 +34,7 @@ int SERVO_RIGHT_LIMIT = 68; //68        79
 // create vlx sensor objects
 VL53L0X f1_sensor;
 VL53L0X f2_sensor;
+VL53L0X sr_sensor;
 Servo my_servo;
 
 void setup() {
@@ -42,26 +43,35 @@ void setup() {
 
   pinMode(XSHUT_F1, OUTPUT);
   pinMode(XSHUT_F2, OUTPUT);
+  pinMode(XSHUT_SR, OUTPUT);
   
   Wire.begin();
   Serial.begin(9600);
   Serial.println("Initialization ...");
 
-  pinMode(XSHUT_F1, INPUT);
-  delay(10);
-  f1_sensor.setAddress(TOF_F1_ADDR);
-  
-  pinMode(XSHUT_F2, INPUT);
-  delay(10);
-  f2_sensor.setAddress(TOF_F2_ADDR);
-  
-  f1_sensor.setTimeout(timeout);
-  f1_sensor.init();
-  f1_sensor.startContinuous();
+//  pinMode(XSHUT_F1, INPUT);
+//  delay(10);
+//  f1_sensor.setAddress(TOF_F1_ADDR);
+//  
+//  pinMode(XSHUT_F2, INPUT);
+//  delay(10);
+//  f2_sensor.setAddress(TOF_F2_ADDR);
 
-  f2_sensor.setTimeout(timeout);
-  f2_sensor.init();
-  f2_sensor.startContinuous();
+  pinMode(XSHUT_SR, INPUT);
+  delay(10);
+  sr_sensor.setAddress(TOF_SR_ADDR);
+  
+//  f1_sensor.setTimeout(timeout);
+//  f1_sensor.init();
+//  f1_sensor.startContinuous();
+//
+//  f2_sensor.setTimeout(timeout);
+//  f2_sensor.init();
+//  f2_sensor.startContinuous();
+
+  sr_sensor.setTimeout(timeout);
+  sr_sensor.init();
+  sr_sensor.startContinuous();
 
   Serial.println("Setup done");
 
@@ -100,32 +110,33 @@ float I = 0.00;
 float D = 0.00;
 
 float k1 = 0.002;
-float k2 = 0.02;
-float k3 = 0.04;
+float k2 = 0.003;
+float k3 = 0.01;
 
 float value = 0.00;
 void loop() {
    if (flag == 1) {
-     if (0 != (f1_sensor.readReg(RESULT_INTERRUPT_STATUS) & 0x07)) {
-      f1 = f1_sensor.readReg16Bit(RESULT_RANGE_STATUS + 10);
-      f1_sensor.writeReg(SYSTEM_INTERRUPT_CLEAR, 0x01);
+     if (0 != (sr_sensor.readReg(RESULT_INTERRUPT_STATUS) & 0x07)) {
+      sr = sr_sensor.readReg16Bit(RESULT_RANGE_STATUS + 10);
+      sr_sensor.writeReg(SYSTEM_INTERRUPT_CLEAR, 0x01);
       }
-     if (0 != (f2_sensor.readReg(RESULT_INTERRUPT_STATUS) & 0x07)) {
-      f2 = f2_sensor.readReg16Bit(RESULT_RANGE_STATUS + 10);
-      f2_sensor.writeReg(SYSTEM_INTERRUPT_CLEAR, 0x01);
-      }
+//     if (0 != (f2_sensor.readReg(RESULT_INTERRUPT_STATUS) & 0x07)) {
+//      f2 = f2_sensor.readReg16Bit(RESULT_RANGE_STATUS + 10);
+//      f2_sensor.writeReg(SYSTEM_INTERRUPT_CLEAR, 0x01);
+//      }
 
        
-    err = f1 - f2; 
+    err = sr - 100; 
     P = err;                          // P
     I = I + err * dt;                 // I
     D = (err - old_err) * 22 / 1000;  // D
     old_err = err;
 
-    value = P * k1 + I * k2 + D * k3;   // от -22 до 22
+    value = P * k1 + I * k2 + D * k3;   // от -22 до 22 
     flag = 0;
 
-    Serial.println("F1 " + String(f1) + "\t" + "F2 " + String(f2) + "\t" + "PID SIGNAL " + String(value));
+Serial.println(value);
+//    Serial.println("SR " + String(sr)+ "\t" + "PID SIGNAL " + String(value));
   }
 
  
