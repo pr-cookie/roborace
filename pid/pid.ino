@@ -2,6 +2,7 @@
 #include <Servo.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
 int timeout = 700;
 
@@ -37,7 +38,14 @@ VL53L0X f2_sensor;
 VL53L0X sr_sensor;
 Servo my_servo;
 
+int motorSpeed = 50;
 void setup() {
+  pinMode(INA, OUTPUT);
+  pinMode(INB, OUTPUT);
+  pinMode(EN, OUTPUT);
+  
+  digitalWrite(EN, HIGH);
+  
   my_servo.attach(STEERING_CONTROL);
   my_servo.write(SERVO_NORMOL);
 
@@ -109,10 +117,11 @@ float P = 0.00;
 float I = 0.00;
 float D = 0.00;
 
-float k1 = 0.002;
+float k1 = 1.2;
 float k2 = 0.003;
-float k3 = 0.01;
+float k3 = 0.2;
 
+int mp = 0;
 float value = 0.00;
 void loop() {
    if (flag == 1) {
@@ -134,23 +143,18 @@ void loop() {
 
     value = P * k1 + I * k2 + D * k3;   // от -22 до 22 
     flag = 0;
+mp = map(value,100,0,225,10);
 
 Serial.println(value);
-//    Serial.println("SR " + String(sr)+ "\t" + "PID SIGNAL " + String(value));
+
+   Serial.println("SR " + String(sr)+ "\t" + "PID SIGNAL " + String(value) + "map " + String(mp));
   }
 
  
-// if ( err > SERVO_LEFT_LIMIT ) {
-//    err = SERVO_LEFT_LIMIT;
-//  }
-//  if ( err < SERVO_RIGHT_LIMIT ) {
-//     err = SERVO_RIGHT_LIMIT;
-//  }
-  
-//  my_servo.write(err); 
-  }
-
-
+ digitalWrite(INA, LOW);    // крутим мотор в                          противоположную сторону
+    digitalWrite(INB, HIGH);
+    analogWrite(PWM, mp);
+}
 ISR(TIMER2_COMPA_vect)
 {
     static int counter = 0;
