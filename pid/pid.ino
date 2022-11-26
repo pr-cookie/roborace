@@ -32,6 +32,13 @@ int SERVO_RIGHT_LIMIT = 68; //68        79
 #define EN 12
 #define PWM 11
 
+#define START_DELAY 114  // it is 5s for 22 ms timer 228
+#define PID_DISTANCE 100
+
+#define INIT_STATE 0
+#define MOVE_STATE 1
+
+
 // create vlx sensor objects
 VL53L0X f1_sensor;
 VL53L0X f2_sensor;
@@ -122,44 +129,73 @@ float k2 = 0.003;
 float k3 = 0.2;
 
 int mp = 0;
-float value = 0.00;
+int value = 0;
+
+
+int state = INIT_STATE;
+
+int start_counter = 0;
+
 void loop() {
    if (flag == 1) {
+
      if (0 != (sr_sensor.readReg(RESULT_INTERRUPT_STATUS) & 0x07)) {
-      sr = sr_sensor.readReg16Bit(RESULT_RANGE_STATUS + 10);
-      sr_sensor.writeReg(SYSTEM_INTERRUPT_CLEAR, 0x01);
-      }
-//     if (0 != (f2_sensor.readReg(RESULT_INTERRUPT_STATUS) & 0x07)) {
-//      f2 = f2_sensor.readReg16Bit(RESULT_RANGE_STATUS + 10);
-//      f2_sensor.writeReg(SYSTEM_INTERRUPT_CLEAR, 0x01);
-//      }
+        sr = sr_sensor.readReg16Bit(RESULT_RANGE_STATUS + 10);
+        sr_sensor.writeReg(SYSTEM_INTERRUPT_CLEAR, 0x01);
+     }
+     
+//   if (0 != (f2_sensor.readReg(RESULT_INTERRUPT_STATUS) & 0x07)) {
+//     f2 = f2_sensor.readReg16Bit(RESULT_RANGE_STATUS + 10);
+//     f2_sensor.writeReg(SYSTEM_INTERRUPT_CLEAR, 0x01);
+//   }
+      
+    
+       switch(state) {
+           case INIT_STATE:            // Use 5s delay
+               start_counter++;
+               if (start_counter >= START_DELAY) {
+                 start_counter = 0;
+                 digitalWrite(INA, LOW);   
+                 digitalWrite(INB, HIGH);
+                 state = MOVE_STATE;
+               }
+               
+           break;
 
-       
-    err = sr - 100; 
-    P = err;                          // P
-    I = I + err * dt;                 // I
-    D = (err - old_err) * 22 / 1000;  // D
-    old_err = err;
+           case MOVE_STATE:
+              err = sr - PID_DISTANCE; 
+              P = err;                          // P
+              I = I + err * dt;                 // I
+              D = (err - old_err) * 22 / 1000;  // D
+              old_err = err;
+        
+              value = P * k1 + I * k2 + D * k3;   // от -22 до 22 
+              if (value > 255) {
+                 value = 255;
+              }
+              
+              if (value < 0) {
+                 value = 0;
+              }              
+                     
+              //analogWrite(PWM, value);
+           break;
+        
+       }
 
-    value = P * k1 + I * k2 + D * k3;   // от -22 до 22 
-    flag = 0;
-mp = map(value,100,0,225,10);
+       flag = 0;
+   }
 
-Serial.println(value);
-
-   Serial.println("SR " + String(sr)+ "\t" + "PID SIGNAL " + String(value) + "map " + String(mp));
-  }
+   Serial.println("STATE: " + String(state) + "\tSR " + String(sr)+ "\t" + "PID SIGNAL " + String(value));
+   analogWrite(PWM, 200);
+}
 
  
- digitalWrite(INA, LOW);    // крутим мотор в                          противоположную сторону
-    digitalWrite(INB, HIGH);
-    analogWrite(PWM, mp);
-}
 ISR(TIMER2_COMPA_vect)
 {
     static int counter = 0;
     counter++;
-    if (counter == 2) {
+    if (counter == 4) {
         flag = 1;
         counter = 0;
     }
